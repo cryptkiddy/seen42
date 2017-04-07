@@ -18,7 +18,7 @@
 
 # settings -----
 LIMIT=300   # max no of episodes. More = slightly slower.
-PLAYER="smplayer"   #player to use. Should be blocking, otherwise "--open" can not work properly. use wrappers if needed.
+PLAYER="smplayer"   #player to use. Should be blocking, otherwise this script can not work properly. use wrappers if needed.
 SECONDS_TO_ASSUME_SEEN=240 #==4min ; if player is opened less than this time no automatic advance of seen will be done (so you can have a short look into episodes)
 
 
@@ -53,9 +53,10 @@ done
 if [ $count -eq $((LIMIT + 1)) ] 
 then
 	#did not find old marker
-	if [ $SEENALL -eq 0 ]
+	if [ $SEENALL == 0 ]
 	then
 		cp -n "$0" seenAll
+		exit 0
 	else
 		cp -n "$0" seen0
 	fi
@@ -124,7 +125,7 @@ then
 		echo Did not move seenMarker, because you did not watched long enough. \(only $DURATION seconds of $SECONDS_TO_ASSUME_SEEN needed.\)
 		exit 0
 	else
-		echo Moved seenMarker. Watched long enough. \( $DURATION seconds of $SECONDS_TO_ASSUME_SEEN needed.\)
+		echo Moved seenMarker. Watched long enough. \($DURATION seconds of $SECONDS_TO_ASSUME_SEEN needed.\)
 	fi	
 
 fi
