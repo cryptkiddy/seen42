@@ -1,33 +1,28 @@
-# Object files
-*.o
-*.ko
-*.obj
-*.elf
+## Vim
+# swap
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+[._]s[a-v][a-z]
+[._]sw[a-p]
+# session
+Session.vim
+# temporary
+.netrwhist
+*~
+# auto-generated tag files
+tags
 
-# Precompiled Headers
-*.gch
-*.pch
+## Linux
+*~
 
-# Libraries
-*.lib
-*.a
-*.la
-*.lo
+# temporary files which can be created if a process still has a handle open of a deleted file
+.fuse_hidden*
 
-# Shared objects (inc. Windows DLLs)
-*.dll
-*.so
-*.so.*
-*.dylib
+# KDE directory preferences
+.directory
 
-# Executables
-*.exe
-*.out
-*.app
-*.i*86
-*.x86_64
-*.hex
+# Linux trash folder which might appear on any partition or disk
+.Trash-*
 
-# Debug files
-*.dSYM/
-*.su
+# .nfs files are created when an open file is removed but is still being accessed
+.nfs*
