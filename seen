@@ -126,11 +126,26 @@ fi
 
 if [ $SEENALL -eq 0 ]
 then
-	mv -n seen{$countpre,All} 2>/dev/null
-	echo seen{$countpre-\>,all}
-
+	moveTo='All'
 else
-	mv -n seen{$countpre,$countpost} 2>/dev/null
-	echo seen{$countpre-\>,$countpost}
+	moveTo=$countpost
 fi
+
+#get our own version number
+ownVerNum="$(awk -F v -- '$1 ~ /^#seen42 $/ {printf "%s",$2 }' "$0")"
+#compare to seenfiles verNum:
+areWeNewer="$(awk -F v -- '$1 ~ /^#seen42 $/ {printf "%d",($2>='"$ownVerNum"') }' "seen$countpre")" ## note that 0 is false here, hence the switched >= !!!
+
+if [ "y$areWeNewer" == "y" ] || [ $areWeNewer == 1 ]
+then
+	#do nothing
+	mv -n seen{$countpre,$moveTo} 2>/dev/null
+else
+	#file should be updated
+	cp "$0" "seen$moveTo" 2>/dev/null
+	rm "seen$countpre"
+	echo updating seenMarker to version $ownVerNum.
+fi
+
+echo seen{$countpre-\>,$moveTo}
 
