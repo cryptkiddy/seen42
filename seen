@@ -1,5 +1,5 @@
 #!/bin/bash
-#seen42 v1.2
+#seen42 v1.3
 # 	 This work is almost certainly below the "threshold of originality" but to avoid confusion it's MIT-Licensed
 #	 A copy of the license and the original (and probably not) updated source can be 
 #	 found @ https://github.com/cryptkiddy/seen42 
@@ -18,8 +18,8 @@
 
 # settings -----
 LIMIT=300   # max no of episodes. More = slightly slower.
-PLAYER="smplayer"   #player to use. Should be blocking, otherwise this script can not work properly. use wrappers if needed.
-SECONDS_TO_ASSUME_SEEN=240 #if player is opened less than this time no automatic advance of seen will be done (so you can have a short look into episodes)
+PLAYER="smplayer"   #player to use. Should be blocking, otherwise "--open" can not work properly. use wrappers if needed.
+SECONDS_TO_ASSUME_SEEN=240 #==4min ; if player is opened less than this time no automatic advance of seen will be done (so you can have a short look into episodes)
 
 
 ### internal -----------
@@ -41,6 +41,7 @@ fi
 
 mv -n seen{.sh,0}  2>/dev/null #so you can name it properly if not in use.
 
+#find current marker if it exists
 for (( count=0; count <=LIMIT; count++ ))
 do
 	if [ -f seen$count ]
@@ -51,7 +52,7 @@ done
 
 if [ $count -eq $((LIMIT + 1)) ] 
 then
-	#not found
+	#did not find old marker
 	if [ $SEENALL -eq 0 ]
 	then
 		cp -n "$0" seenAll
@@ -66,6 +67,7 @@ countpost=$((count+1))
 
 if [ $OPEN -eq 0 ]
 then
+	# find a fittingly named episode (or multiple ):
 	array=()
 	while IFS= read -r -d $'\0'; do
 		array+=("$REPLY")
@@ -80,6 +82,7 @@ then
 		CANDID_SELECTED="${array[0]}"
 	else
 				
+		#present selection screen if multiple candidates found
 		selected="Null"
 		echo "Choose episode $countpost from candidates:"
 		echo "0)  Exit programm"
@@ -110,16 +113,18 @@ then
 		fi
 	fi
 
+	#episode found or seleced. Starting player and measuring time it was open:
 	echo starting: "$PLAYER" "$CANDID_SELECTED"
 	SECONDS=0
 	$PLAYER "$CANDID_SELECTED" >/dev/null
 	DURATION=$SECONDS
-	if [ $DURATION -le $SECONDS_TO_ASSUME_SEEN ] #watched less than 240s = 4min => probably not finished
+	if [ $DURATION -le $SECONDS_TO_ASSUME_SEEN ]
 	then
-		echo not moved seen, because not watched long enough. \(only $DURATION seconds of $SECONDS_TO_ASSUME_SEEN needed.\)
+		#watched less than $SECONDS_TO_ASSUME_SEEN => probably not finished ( maybe was wrong episode, or looked too boring, or...)
+		echo Did not move seenMarker, because you did not watched long enough. \(only $DURATION seconds of $SECONDS_TO_ASSUME_SEEN needed.\)
 		exit 0
 	else
-		echo moved. Watched long enough. \( $DURATION seconds of $SECONDS_TO_ASSUME_SEEN needed.\)
+		echo Moved seenMarker. Watched long enough. \( $DURATION seconds of $SECONDS_TO_ASSUME_SEEN needed.\)
 	fi	
 
 fi
@@ -136,16 +141,21 @@ ownVerNum="$(awk -F v -- '$1 ~ /^#seen42 $/ {printf "%s",$2 }' "$0")"
 #compare to seenfiles verNum:
 areWeNewer="$(awk -F v -- '$1 ~ /^#seen42 $/ {printf "%d",($2>='"$ownVerNum"') }' "seen$countpre")" ## note that 0 is false here, hence the switched >= !!!
 
-if [ "y$areWeNewer" == "y" ] || [ $areWeNewer == 1 ]
+#if version of currently executed script is higher than version of script in markerFile update the marker file.
+if [ ! "y$areWeNewer" == "y" ] && [  $areWeNewer == 0 ]
 then
-	#do nothing
-	mv -n seen{$countpre,$moveTo} 2>/dev/null
-else
-	#file should be updated
-	cp "$0" "seen$moveTo" 2>/dev/null
-	rm "seen$countpre"
+	#file should be updated (our version is newer AND old file was a "seen42" script (contained marker => no risk of clobbering s.th.))
+	cp "$0" "seen$countpre" 2>/dev/null
 	echo updating seenMarker to version $ownVerNum.
 fi
 
-echo seen{$countpre-\>,$moveTo}
+if [ ! -e "seen$moveTo" ]
+then
+	mv -n seen{$countpre,$moveTo} 2>/dev/null
+	echo seen{$countpre-\>,$moveTo}
+else
+	echo ERROR: next seen file \(seen$moveTo\) already exists. Cowardly refusing to overwrite it. 1>&2
+fi
+
+
 
