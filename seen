@@ -2,14 +2,14 @@
 # 	 This works license can be found at the bottom of the file.
 # 	 The original (and probably not) updated source can be found @ https://github.com/cryptkiddy/seen42 
 
-#moves the seen-episodes-marker by one. Start by naming this file seen1 (or "seen0" if nothing was seen yet ^^)
+# moves the seen-episodes-marker by one. Start by naming this file seen1 (or "seen0" if nothing was seen yet ^^)
 # can also be put in your PATH to handle initial move automatically.
 #
 # "seen --all" will set the marker to read "seenAll", which is usefull after finishing the episodes.
 # "seen --open" or "seen o" can be used to automatically start the next episode and advance the pointer if it has been
 # 		watched for a given time (see settings)
 
-#sidenote: if seenAll existis it is ignored as you might be rewatching, and then it's handy to have it 
+# sidenote: if seenAll existis it is ignored as you might be rewatching, and then it's handy to have it 
 # 			 ignored but kept around as marker (I like it that way YMMV XD )
 
 
