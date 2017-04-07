@@ -1,5 +1,5 @@
 #!/bin/bash
-#seen42 v1.0
+#seen42 v1.1
 # 	 This work is almost certainly below the "threshold of originality" but to avoid confusion it's MIT-Licensed
 #	 A copy of the license and the original (and probably not) updated source can be 
 #	 found @ https://github.com/cryptkiddy/seen42 
@@ -81,7 +81,7 @@ then
 	else
 				
 		selected="Null"
-		echo "Choose file to play:"
+		echo "Choose episode $countpost from candidates:"
 		echo "0)  Exit programm"
 		select ignored in "${array[@]}"
 		do
