@@ -1,0 +1,157 @@
+#!/bin/bash
+# 	 This works license can be found at the bottom of the file.
+# 	 The original (and probably not) updated source can be found @ https://github.com/cryptkiddy/seen42 
+
+#moves the seen-episodes-marker by one. Start by naming this file seen1 (or "seen0" if nothing was seen yet ^^)
+# can also be put in your PATH to handle initial move automatically.
+#
+# "seen --all" will set the marker to read "seenAll", which is usefull after finishing the episodes.
+# "seen --open" or "seen o" can be used to automatically start the next episode and advance the pointer if it has been
+# 		watched for a given time (see settings)
+
+#sidenote: if seenAll existis it is ignored as you might be rewatching, and then it's handy to have it 
+# 			 ignored but kept around as marker (I like it that way YMMV XD )
+
+
+
+# settings -----
+LIMIT=300   # max no of episodes. More = slightly slower.
+PLAYER="smplayer"   #player to use. Should be blocking, otherwise this script can not work properly. use wrappers if needed.
+SECONDS_TO_ASSUME_SEEN=240 #if player is opened less than this time no automatic advance of seen will be done (so you can have a short look into episodes)
+
+
+### internal -----------
+SEENALL=-1
+OPEN=-1
+
+
+if [ "y$1" == "y--all" ] || [ "y$1" == "yall" ] || [ "y$1" == "ya" ] ; then
+	SEENALL=0
+elif [ "y$1" == "y--open" ] || [ "y$1" == "yopen" ] || [ "y$1" == "yo" ] ; then
+	OPEN=0
+elif [ "y$1" == "y" ] ; then
+	: #do nothing, normal operation
+else 
+	echo "error, wrong parameter. See https://github.com/cryptkiddy/seen42"
+	exit -1
+fi
+
+
+mv -n seen{.sh,0}  2>/dev/null #so you can name it properly if not in use.
+
+for (( count=0; count <=LIMIT; count++ ))
+do
+	if [ -f seen$count ]
+	then
+		break
+	fi
+done
+
+if [ $count -eq $((LIMIT + 1)) ] 
+then
+	#not found
+	if [ $SEENALL -eq 0 ]
+	then
+		cp -n "$0" seenAll
+	else
+		cp -n "$0" seen0
+	fi
+	count=0 # not found <=> seen0 exists => use this for further processing
+fi
+
+countpre=$count
+countpost=$((count+1))
+
+if [ $OPEN -eq 0 ]
+then
+	array=()
+	while IFS= read -r -d $'\0'; do
+		array+=("$REPLY")
+	done < <(find . -maxdepth 1 -regextype sed \( -type f -o -type l \) -iregex  ".*/\(.*[^0-9]\+\|\)0*$countpost\(\|[^0-9]\+.*\)" -print0 )
+
+	if [ ${#array[@]} -eq 0 ] 
+	then
+		echo No appropriately named episode found. Exiting.
+		exit 1
+	elif [ ${#array[@]} -eq 1 ] 
+	then
+		CANDID_SELECTED="${array[0]}"
+	else
+				
+		selected="Null"
+		echo "Choose file to play:"
+		echo "0)  Exit programm"
+		select ignored in "${array[@]}"
+		do
+			re='^[0-9]+$'
+			if ! [[ "$REPLY" =~ $re ]] #check if is integer
+			then
+				echo Err: not a number.	
+			   	#redisplay
+			else
+
+				if [ "$REPLY" -eq 0 ]
+				then
+					echo Exiting.
+					exit 0
+				fi
+
+				selected=$(( REPLY - 1))
+				CANDID_SELECTED="${array[$selected]}"
+				break
+			fi
+		done
+		if [ "y$selected" == "yNull" ] 
+		then #if select was interrupted with ^D
+			echo Exiting
+			exit 0
+		fi
+	fi
+
+	echo starting: "$PLAYER" "$CANDID_SELECTED"
+	SECONDS=0
+	$PLAYER "$CANDID_SELECTED" >/dev/null
+	DURATION=$SECONDS
+	if [ $DURATION -le $SECONDS_TO_ASSUME_SEEN ] #watched less than 240s = 4min => probably not finished
+	then
+		echo not moved seen, because not watched long enough. \(only $DURATION seconds of $SECONDS_TO_ASSUME_SEEN needed.\)
+		exit 0
+	else
+		echo moved. Watched long enough. \( $DURATION seconds of $SECONDS_TO_ASSUME_SEEN needed.\)
+	fi	
+
+fi
+
+if [ $SEENALL -eq 0 ]
+then
+	mv -n seen{$countpre,All} 2>/dev/null
+	echo seen{$countpre-\>,all}
+
+else
+	mv -n seen{$countpre,$countpost} 2>/dev/null
+	echo seen{$countpre-\>,$countpost}
+fi
+
+
+#MIT License
+
+#Copyright (c) 2017 Marvin Marx
+
+#Permission is hereby granted, free of charge, to any person obtaining a copy
+#of this software and associated documentation files (the "Software"), to deal
+#in the Software without restriction, including without limitation the rights
+#to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+#copies of the Software, and to permit persons to whom the Software is
+#furnished to do so, subject to the following conditions:
+
+#The above copyright notice and this permission notice shall be included in all
+#copies or substantial portions of the Software.
+
+#THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+#IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+#AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+#LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+#OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+#SOFTWARE.
+
