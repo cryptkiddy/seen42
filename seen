@@ -1,5 +1,5 @@
 #!/bin/bash
-#seen42 v1.3
+#seen42 v1.4
 # 	 This work is almost certainly below the "threshold of originality" but to avoid confusion it's MIT-Licensed
 #	 A copy of the license and the original (and probably not) updated source can be 
 #	 found @ https://github.com/cryptkiddy/seen42 
@@ -25,6 +25,15 @@ SECONDS_TO_ASSUME_SEEN=240 #==4min ; if player is opened less than this time no 
 ### internal -----------
 SEENALL=-1
 OPEN=-1
+
+#TODO, NOTE: Mostly episodes are named such that alphabetically e.g. 7 follows 6 and is followed by 8. Use that as default preselection for chooser.
+#   Ideas: dont modify arrays, work with arrays of indexes into the filename array. (use only videofiles to begin with)
+#          Extract selector stuff into function, that takes episodecount as array. Sort arrays, look for consecutive number in e.g. Ep3 Ep 4 and Ep 5 array and if exists,
+#  		   that is probably the desired EP 4. Special handling required for first and last episode.
+# 	2. Idea: sliding window over the array of all videonames. Stash any good fit. must be done before pruning for "fitting names"
+#   3. Idea: use substitute on the found files with our regex to replace $CURRENTNUMBER with $PREV and $NEXT. See if those new names exist in the folder. handle first/last EP. (check if are video files.)
+# 			 what about Exists, but has different suffix ("movieE10S30[0xAFDE1356C]")
+# TODO: give bonus on likelyhood if s.th. is named E02, even if other 00abc002 in other filenames
 
 
 if [ "y$1" == "y--all" ] || [ "y$1" == "yall" ] || [ "y$1" == "ya" ] ; then
@@ -69,10 +78,23 @@ countpost=$((count+1))
 if [ $OPEN -eq 0 ]
 then
 	# find a fittingly named episode (or multiple ):
-	array=()
+	array1=()
 	while IFS= read -r -d $'\0'; do
-		array+=("$REPLY")
-	done < <(find . -maxdepth 1 -regextype sed \( -type f -o -type l \) -iregex  ".*/\(.*[^0-9]\+\|\)0*$countpost\(\|[^0-9]\+.*\)" -print0 )
+		array1+=("$REPLY")
+	done < <(find . -maxdepth 1 -regextype sed \( -type f -o -type l \) -iregex  ".*/\(.*[^0-9]\+\|\)\([1-9]0\+\)\?0*$countpost\(\|[^0-9]\+.*\)" -print0 )
+	#Regex is for Season 02 Ep 34 :  string must include 34. formats possible: 200034 (s2 ep 34) or 00034 or without the 0. one 0 between ep and s is needed. If Ep and Seas 
+	# are separate, season is simply ignored in filename. This will lead to confusion if (s2 ep 2) is searched, as S02 might appear often, but KISS.
+
+	echo $array1
+	array=()
+	for FIL in "${array1[@]}"
+	do
+		tmp=$(file -N -i -L -- "$FIL" | sed -n 's-: video/[^:]*$--p')
+		if [ "y$tmp" != "y" ] 
+		then
+			array+=("$tmp")
+		fi
+	done
 
 	if [ ${#array[@]} -eq 0 ] 
 	then
