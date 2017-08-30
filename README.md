@@ -10,7 +10,10 @@ Small hack to automatically advance a counter of how many episodes of a series h
 * call it from the directory containing the episodes:
   * ```seen``` to advance counter by one or initially create it  
   * ```seen --open``` or ```seen o``` to automatically open the next episode and advance the counter if it was opened for more than 4 minutes (can be changed)  
-  * ```seen --all``` after you have finished all episodes to set a "seenAll" marker  
+  * ```seen --all```  or ```seen -a``` or ``seen a``` after you have finished all episodes to set a "seenAll" marker  
+  * ```--verbose``` or ```-v`` or ```v```: give especially detailed output (aka be verbose)
+  * ```seen --regexdebug``` or ```seen -rd``` or ```seen rd``` debug the regExs you use in your script (e.g. forces ignoring of "break" in them and displays the result of every single one separately). If you find new RegEx that work particularly well, please open an issue and share :)
+
 
 ### Option 2
   * Every ```seenXY``` marker is a copy of the script. Thus simply copying the script to e.g. "seen0" and executing with ```./seen0 --open``` will be fine, albeit cumbersome.
