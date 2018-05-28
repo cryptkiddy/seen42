@@ -1,4 +1,5 @@
 #!/bin/bash
+#seen42 v1.7
 
 # Many of us watch series of shows on their computer. Many of us take a break between episodes. Many of us forget what
 # episode number we watched last. And as most of us are too lazy to search through episode which one we have seen 
@@ -34,15 +35,11 @@ SECONDS_TO_ASSUME_SEEN=240 #==4min ; if player is opened less than this time no 
 
 
 ### internal -----------
-
-# Version No. Format needed for the updater. Do not change format without looking at the updater.
-#seen42 v1.7
-
-
 SEENALL=-1
 OPEN=-1
 VERBOSE=-1
 REGEXDEBUG=-1
+
 #array of regex scrapers, telling us what filenames to consider an episode (and in what order, cnf. seen --open) ((some regex ideas taken from kodi))
 #in this ++EPISODE_NUMBER_VAL++ will be expanded to the episode we are looking for.
 #use "break" to stop searching, if anything was found before this entry. If not "break" is ignored. Feel free to use "break abc123..." for debugging. everything after "break"
