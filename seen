@@ -1,18 +1,29 @@
 #!/bin/bash
-#seen42 v1.6
-# 	 This work is almost certainly below the "threshold of originality" but to avoid confusion it's MIT-Licensed
-#	 A copy of the license and the original (and probably not) updated source can be
-#	 found @ https://github.com/cryptkiddy/seen42
 
-# moves the seen-episodes-marker by one. Start by naming this file seen1 (or "seen0" if nothing was seen yet ^^)
-# can also be put in your PATH to handle initial move automatically.
+# Many of us watch series of shows on their computer. Many of us take a break between episodes. Many of us forget what
+# episode number we watched last. And as most of us are too lazy to search through episode which one we have seen 
+# and which not: Some of us place a reminder in the directory of the episodes. Name it "Last_seen_ep42" or for short
+# 	"seen42"
+# This is this reminder. But now it moves forward if you click on it. And it opens the correct episode if you are on
+# the console and moves the marker automatically after watching. And if you keep copying it, it will spread everywhere.
+# Thats it. Thats all it does.
+
+#	 License: This work is almost certainly below the "threshold of originality" but to avoid confusion it's MIT-Licensed
+#	 	A copy of the license and the original (and probably not) updated source can be
+#	 	found @ https://github.com/cryptkiddy/seen42
+
+#How To:
+# moves the $seen-episodes-marker by one. (aka. renames itself if you click it "seen1"->"seen2"...)
+# Start by naming this file "seen1" (or "seen0" if nothing was seen yet ^^)
+# ( Sidenote: can also be put in your PATH to handle initial move automatically. 
+#			Just call it like you would execute this file and go from there.     )
 #
 # "seen --all" will set the marker to read "seenAll", which is usefull after finishing the episodes.
 # "seen --open" or "seen o" can be used to automatically start the next episode and advance the pointer if it has been
 # 		watched for a given time (see settings)
 
-# sidenote: if seenAll existis it is ignored as you might be rewatching, and then it's handy to have it
-# 			 ignored but kept around as marker (I like it that way YMMV XD )
+# ( sidenote2: if seenAll existis it is ignored as you might be rewatching, and then it's handy to have it
+# 			 ignored but kept around as marker (I like it that way YMMV ) )
 
 
 
@@ -23,6 +34,11 @@ SECONDS_TO_ASSUME_SEEN=240 #==4min ; if player is opened less than this time no 
 
 
 ### internal -----------
+
+# Version No. Format needed for the updater. Do not change format without looking at the updater.
+#seen42 v1.7
+
+
 SEENALL=-1
 OPEN=-1
 VERBOSE=-1
@@ -40,8 +56,8 @@ ScraperRegex=(
 	"break 1"  #generic hint: it is often better to split a regex into different small ones, as ordering in this list results in ordering of matches in output.
 
 	"# abc_season01e3_abc.mkv, s1e3.lol s-01.e_4.ext"
-	".*/.*${SEASON_STRING}$SEASON[._]\?${EPISODE_STRING}$EPISODE\(\|[^0-9]\+.*\)"
-	".*/.*${SEASON_STRING}[_-]\?$SEASON[._-]\?${EPISODE_STRING}[_-]\?$EPISODE\(\|[^0-9]\+.*\)"
+	".*/.*${SEASON_STRING}${SEASON}[._]\?${EPISODE_STRING}$EPISODE\(\|[^0-9]\+.*\)"
+	".*/.*${SEASON_STRING}[_-]\?${SEASON}[._-]\?${EPISODE_STRING}[_-]\?$EPISODE\(\|[^0-9]\+.*\)"
 	"break 2"
 
 	"# abc_e3.mkv abc_e-3.ext"
@@ -50,7 +66,7 @@ ScraperRegex=(
 	"break 3"
 
 	"# abc_1x3_abc.mkv"
-	".*/.*$SEASON[xX._-]$EPISODE\(\|[^0-9]\+.*\)"
+	".*/.*${SEASON}[xX._-]$EPISODE\(\|[^0-9]\+.*\)"
 	"break 4"
 
 	"# abc_108.mkv abc_2308.ext"
@@ -106,18 +122,19 @@ while [[ $# -gt 0 ]]
 do
 	key="$1"
 	case $key in
-		-a|a|--all)
+		-a|a|--all|all)
 			SEENALL=0
 			;;
-		-o|o|--open)
+		-o|o|--open|open)
 			OPEN=0
 			;;
-		-v|v|--verbose)
+		-v|v|--verbose|verbose)
 			VERBOSE=0
 			;;
-		-rd|rd|--regexdebug)
+		-rd|rd|--regexdebug|regexdebug)
 			REGEXDEBUG=0
 			VERBOSE=0
+			OPEN=0
 			;;
 		*)
 			#unknown option
