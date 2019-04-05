@@ -30,7 +30,7 @@
 
 # settings -----
 LIMIT=300   # max no of episodes. More = slightly slower.
-PLAYER="smplayer"   #player to use. Should be blocking, otherwise this script can not work properly. use wrappers if needed.
+PLAYER="smplayer -fullscreen -close-at-end"   #player to use. Should be blocking, otherwise this script can not work properly. use wrappers if needed.
 SECONDS_TO_ASSUME_SEEN=240 #==4min ; if player is opened less than this time no automatic advance of seen will be done (so you can have a short look into episodes)
 
 
@@ -57,9 +57,9 @@ ScraperRegex=(
 	".*/.*${SEASON_STRING}[_-]\?${SEASON}[._-]\?${EPISODE_STRING}[_-]\?$EPISODE\(\|[^0-9]\+.*\)"
 	"break 2"
 
-	"# abc_e3.mkv abc_e-3.ext"
+	"# abc_e3.mkv abc_e-3.ext abc_e 3.ext"
 	".*/.*${EPISODE_STRING}$EPISODE\(\|[^0-9]\+.*\)"
-	".*/.*${EPISODE_STRING}[_-]$EPISODE\(\|[^0-9]\+.*\)"
+	".*/.*${EPISODE_STRING}[_ -]$EPISODE\(\|[^0-9]\+.*\)"
 	"break 3"
 
 	"# abc_1x3_abc.mkv"
@@ -316,7 +316,7 @@ then
 	#episode found or seleced. Starting player and measuring time it was open:
 	echo starting: "$PLAYER" "$CANDID_SELECTED"
 	SECONDS=0
-	$PLAYER "$CANDID_SELECTED" >/dev/null
+	$PLAYER "$CANDID_SELECTED"
 	DURATION=$SECONDS
 	if [ $DURATION -le $SECONDS_TO_ASSUME_SEEN ]
 	then
