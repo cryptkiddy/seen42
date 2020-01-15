@@ -2,7 +2,7 @@
 #seen42 v1.7
 
 # Many of us watch series of shows on their computer. Many of us take a break between episodes. Many of us forget what
-# episode number we watched last. And as most of us are too lazy to search through episode which one we have seen 
+# episode number we watched last. And as most of us are too lazy to search through episode which one we have seen
 # and which not: Some of us place a reminder in the directory of the episodes. Name it "Last_seen_ep42" or for short
 # 	"seen42"
 # This is this reminder. But now it moves forward if you click on it. And it opens the correct episode if you are on
@@ -16,7 +16,7 @@
 #How To:
 # moves the $seen-episodes-marker by one. (aka. renames itself if you click it "seen1"->"seen2"...)
 # Start by naming this file "seen1" (or "seen0" if nothing was seen yet ^^)
-# ( Sidenote: can also be put in your PATH to handle initial move automatically. 
+# ( Sidenote: can also be put in your PATH to handle initial move automatically.
 #			Just call it like you would execute this file and go from there.     )
 #
 # "seen --all" will set the marker to read "seenAll", which is usefull after finishing the episodes.
@@ -29,22 +29,23 @@
 
 
 # settings -----
-LIMIT=300   # max no of episodes. More = slightly slower.
 PLAYER="smplayer -fullscreen -close-at-end"   #player to use. Should be blocking, otherwise this script can not work properly. use wrappers if needed.
 SECONDS_TO_ASSUME_SEEN=240 #==4min ; if player is opened less than this time no automatic advance of seen will be done (so you can have a short look into episodes)
 
 
 ### internal -----------
-SEENALL=-1
-OPEN=-1
-VERBOSE=-1
-REGEXDEBUG=-1
+SEENALL=false
+OPEN=false
+VERBOSE=false
+REGEXDEBUG=false
+NUMBEREDSEEN=false
+SeenNumber=-1
 
 #array of regex scrapers, telling us what filenames to consider an episode (and in what order, cnf. seen --open) ((some regex ideas taken from kodi))
 #in this ++EPISODE_NUMBER_VAL++ will be expanded to the episode we are looking for.
 #use "break" to stop searching, if anything was found before this entry. If not "break" is ignored. Feel free to use "break abc123..." for debugging. everything after "break"
 #  is ignored, but echod in verbose mode. comments start with "#" on a new line and are simply echod. Note that comments always need their own line.
-SEASON='\([0-9]\{1,2\}[1-9]\)'
+SEASON='\([0-9]\{0,2\}[1-9]\)'
 SEASON_STRING='[sS]\([eE]\([aA]\([sS]\([oO]\([nN]\?\)\)\?\)\?\)\?\)\?'
 EPISODE_STRING='[eE]\([pP]\([iI]\([sS]\([oO]\([dD]\([eE]\)\?\)\?\)\?\)\?\)\?\)\?'
 EPISODE='0*++EPISODE_NUMBER_VAL++'
@@ -62,7 +63,8 @@ ScraperRegex=(
 	".*/.*${EPISODE_STRING}[_ -]$EPISODE\(\|[^0-9]\+.*\)"
 	"break 3"
 
-	"# abc_1x3_abc.mkv"
+	"# abc_1x3_abc.mkv abc_1.3_abc.mkv"
+	".*/.*${SEASON}[xX._-]$EPISODE\(\|[^0-9]\+.*\)"
 	".*/.*${SEASON}[xX._-]$EPISODE\(\|[^0-9]\+.*\)"
 	"break 4"
 
@@ -75,9 +77,12 @@ ScraperRegex=(
 	".*/\(\|.*[^0-9]\)[0]*${EPISODE}[.]\ \(\|[^0-9]\+.*\)"
 	"# abc_34._abc"
 	".*/\(\|.*[^0-9]\)[0]*${EPISODE}[.]\(\|[^0-9]\+.*\)"
+
+	"# '34 - bla.mp4' == Filename starts with the number"
+	".*/[0]*${EPISODE}\(\|[^0-9]\+.*\)" #FIXME: this seems to be ignored if the ones before trigger?
 	"break 5.5"
 
-	"#Regex is for e.g.: Season 02 Ep 34 :  string must include "34". formats possible: 200034 (s2 ep 34) or 00034 or without the 0. one 0 between ep and s is needed. If Ep and Seas"
+	"#Regex is for e.g.: Season 02 Ep 34 :  string must include '34'. formats possible: 200034 (s2 ep 34) or 00034 or without the 0. one 0 between ep and s is needed. If Ep and Seas"
 	"# are separate, season is simply ignored in filename."
 	".*/\(.*[^0-9]\+\|\)\([1-9]0\+\)\?0*++EPISODE_NUMBER_VAL++\(\|[^0-9]\+.*\)"
 	"break 6 -- below lies desperation"
@@ -110,6 +115,7 @@ ScraperRegex=(
 # 	2. Idea: sliding window over the array of all videonames. Stash any good fit. must be done before pruning for "fitting names"
 #   3. Idea: use substitute on the found files with our regex to replace $CURRENTNUMBER with $PREV and $NEXT. See if those new names exist in the folder. handle first/last EP. (check if are video files.)
 # 			  - what about: Exists, but has different suffix ("movieE10S30[0xAFDE1356C]")
+#   4. Idea: if rhash calculated crc checksum appears in filename, ignore that for episode search
 
 
 
@@ -120,23 +126,31 @@ do
 	key="$1"
 	case $key in
 		-a|a|--all|all)
-			SEENALL=0
+			SEENALL=true
 			;;
 		-o|o|--open|open)
-			OPEN=0
+			OPEN=true
 			;;
 		-v|v|--verbose|verbose)
-			VERBOSE=0
+			VERBOSE=true
 			;;
 		-rd|rd|--regexdebug|regexdebug)
-			REGEXDEBUG=0
-			VERBOSE=0
-			OPEN=0
+			REGEXDEBUG=true
+			VERBOSE=true
+			OPEN=true
 			;;
 		*)
-			#unknown option
-			echo "error, wrong parameter. See https://github.com/cryptkiddy/seen42"
-			exit -1
+			#check if number
+			re='^[0-9]+$'
+			if  [[ $key =~ $re ]] ; then
+				NUMBEREDSEEN=true
+				SeenNumber=$key
+			else
+				#unknown option
+				echo "error, wrong parameter. See https://github.com/cryptkiddy/seen42"
+				exit 254
+			fi
+			unset re
 			;;
 	esac
 	shift #advance parameter
@@ -144,19 +158,24 @@ done
 
 mv -n seen{.sh,0}  2>/dev/null #so you can name it properly if not in use.
 
-#find current marker if it exists
-for (( count=0; count <=LIMIT; count++ ))
+#find current marker if it exists, note this chooses the lowest seen42 marker. This allows rewatching keeping the highest marker.
+markerArray=()
+for marker in seen*
 do
-	if [ -f seen$count ]
+	if [[ -f "$marker" && "$marker" =~ ^seen[0-9]+$ ]]
 	then
-		break
+		markerArray+=("${marker/seen/}")
 	fi
 done
+IFS=$'\n'
+	mapfile -t sortedMarker < <(sort -n <<<"${markerArray[*]}")
+unset IFS
+count=${sortedMarker[0]}
 
-if [ $count -eq $((LIMIT + 1)) ]
+if [ "y$count" == "y" ]
 then
 	#did not find old marker
-	if [ $SEENALL == 0 ]
+	if $SEENALL
 	then
 		cp -n "$0" seenAll
 		exit 0
@@ -168,12 +187,12 @@ fi
 
 countpre=$count
 countpost=$((count+1))
-if [ $VERBOSE -eq 0 ]
+if $VERBOSE
 then
 	echo Next episode to come: $countpost
 fi
 
-if [ $OPEN -eq 0 ]
+if $OPEN
 then
 
 	#get candidates by filetype and name according to regex in $ScraperRegex
@@ -184,7 +203,7 @@ then
 
 		if [[ "$regex" == \#* ]]
 		then
-			if [ $VERBOSE -eq 0 ]
+			if $VERBOSE
 			then
 				echo "##$regex"
 			fi
@@ -193,14 +212,14 @@ then
 
 		if [[ "$regex" == break* ]]
 		then
-			if [ $VERBOSE -eq 0 ]
+			if $VERBOSE
 			then
 				echo "$regex"
 				echo
 			fi
 			if [ ${#episode_candidate_array[@]} -ne 0 ]
 			then
-				if [ $REGEXDEBUG -ne 0 ]
+				if ! $REGEXDEBUG
 				then
 					break
 				else
@@ -212,7 +231,7 @@ then
 			fi
 		fi
 
-		if [ $VERBOSE -eq 0 ]
+		if $VERBOSE
 		then
 			echo RegEx: "$regex"
 		fi
@@ -225,20 +244,20 @@ then
 
 		for FIL in "${array_by_filename[@]}"
 		do
-			if [ $VERBOSE -eq 0 ]
+			if $VERBOSE
 			then
 				echo -n "---- $FIL"
 			fi
 			tmp=$(file -N -i -L -- "$FIL" | sed -n 's-: video/[^:]*$--p')
 			if [ "y$tmp" != "y" ]
 			then
-				if [ $VERBOSE -eq 0 ]
+				if $VERBOSE
 				then
 					echo " added"
 				fi
 				episode_candidate_array+=("$tmp")
 			else
-				if [ $VERBOSE -eq 0 ]
+				if $VERBOSE
 				then
 					echo ": is not a movie"
 					echo " NONMOVIE DISCARDED"
@@ -260,7 +279,7 @@ then
 	unset episode_candidate_uniq
 
 
-	if [ $REGEXDEBUG -eq 0 ]
+	if $REGEXDEBUG
 	then
 		echo Exiting due to RegExDebug enabled.
 		exit
@@ -280,7 +299,7 @@ then
 		selected="Null"
 		echo "Choose episode $countpost from candidates:"
 		echo "0)  Exit programm"
-		select ignored in "${episode_candidate_array[@]}"
+		select _ in "${episode_candidate_array[@]}"
 		do
 			re='^[0-9]+$'
 			if ! [[ "$REPLY" =~ $re ]] #check if is integer
@@ -307,7 +326,7 @@ then
 		fi
 	fi
 
-	if [ $VERBOSE -eq 0 ]
+	if $VERBOSE
 	then
 		echo candidate selected is: "$CANDID_SELECTED"
 	fi
@@ -330,9 +349,12 @@ then
 fi
 
 #set the  seenAll marker.
-if [ $SEENALL -eq 0 ]
+if $SEENALL
 then
 	moveTo='All'
+elif $NUMBEREDSEEN
+then
+	moveTo="$SeenNumber"
 else
 	moveTo=$countpost
 fi
